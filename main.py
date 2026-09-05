@@ -323,13 +323,13 @@ def generate_inpatient_hp(raw_text: str, output_dir: str) -> str:
     fda = extract_tag(clean, "FDA", 20, "ปฏิเสธแพ้ยา")
 
     # PE
-    ga = extract_tag(clean, "GA", 45, "Good consciousness, not pale, no jaundice")
-    heent = extract_tag(clean, "HEENT", 46, "Pharynx and tonsils not injected")
-    cvs = extract_tag(clean, "CVS", 46, "Normal S1 S2, no murmur")
-    rs = extract_tag(clean, "RS", 46, "Normal breath sound, no adventitious sound")
-    abd = extract_tag(clean, "Abd", 46, "Soft, non-tender, normal bowel sound")
-    ext = extract_tag(clean, "Ext", 46, "No deformities, no edema")
-    cns = extract_tag(clean, "CNS", 46, "E4V5M6, motor power grade 5 all")
+    ga = extract_tag(clean, "GA", 45, "alert, good consciousness")
+    heent = extract_tag(clean, "HEENT", 46, "not pale conjunctiva, anicteric sclera, no LN")
+    cvs = extract_tag(clean, "CVS", 46, "CRT<2sec, pulse RA 2+")
+    rs = extract_tag(clean, "RS", 46, "clear equal BS both")
+    abd = extract_tag(clean, "Abd", 46, "soft, not tender, no rebound, no guarding")
+    ext = extract_tag(clean, "Ext", 46, "no edema, no rash")
+    cns = extract_tag(clean, "CNS", 46, "grossly intact")
 
     # Assessment
     pl = extract_tag(clean, "PL", 50, "-")
