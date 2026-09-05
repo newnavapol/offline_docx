@@ -1,4 +1,4 @@
-# IPD Document Generator (Offline) v1.0.0
+# IPD Document Generator (Offline) v1.1.0
 
 A professional, standalone, and completely offline desktop application designed for Emergency Room physicians to quickly generate structured Inpatient (IPD) documents.
 

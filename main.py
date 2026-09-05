@@ -18,7 +18,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
 
-APP_VERSION = 'v1.0.0'
+APP_VERSION = 'v1.1.0'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -446,6 +446,8 @@ def generate_informed_consent(raw_text: str, output_dir: str) -> str:
 import json
 from datetime import datetime
 import subprocess
+import threading
+from pathlib import Path
 
 # ============================================================
 # GUI APPLICATION
@@ -815,6 +817,9 @@ class DocxGeneratorApp(tk.Tk):
                               bg="#161b22", fg="#8b949e", anchor="w", padx=10, pady=4)
         status_bar.pack(fill="x", side="bottom")
 
+        # Check for updates in background
+        threading.Thread(target=self.check_for_updates, daemon=True).start()
+
     def show_template_guide(self):
         guide_win = tk.Toplevel(self)
         guide_win.title("IPD Document Template Guide")
@@ -947,6 +952,72 @@ Name Surname
             subprocess.Popen(['open', self.last_generated_dir])
         else: # Linux
             subprocess.Popen(['xdg-open', self.last_generated_dir])
+
+
+    def check_for_updates(self):
+        try:
+            import urllib.request
+            import json
+            
+            url = "https://api.github.com/repos/newnavapol/offline_docx/releases/latest"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                data = json.loads(response.read().decode())
+            
+            latest_version = data.get("tag_name", "")
+            if latest_version and latest_version != APP_VERSION:
+                assets = data.get("assets", [])
+                download_url = None
+                filename = None
+                
+                target = ".exe" if os.name == 'nt' else "_Mac.zip"
+                    
+                for asset in assets:
+                    if asset.get("name", "").endswith(target):
+                        download_url = asset.get("browser_download_url")
+                        filename = asset.get("name")
+                        break
+                
+                if download_url:
+                    self.after(0, lambda: self.prompt_update(latest_version, download_url, filename))
+        except Exception as e:
+            print(f"Update check failed: {e}")
+
+    def prompt_update(self, latest_version, download_url, filename):
+        if messagebox.askyesno("Update Available", f"Version {latest_version} is available!\n\nWould you like to download it to your Downloads folder now?"):
+            self.download_update(download_url, filename)
+
+    def download_update(self, url, filename):
+        self.status_var.set(f" Downloading {filename}...")
+        self.update_idletasks()
+        
+        def do_download():
+            try:
+                import urllib.request
+                import os
+                
+                downloads_dir = str(Path.home() / "Downloads")
+                save_path = os.path.join(downloads_dir, filename)
+                
+                urllib.request.urlretrieve(url, save_path)
+                
+                self.after(0, lambda: self.finish_update(save_path, downloads_dir))
+            except Exception as e:
+                self.after(0, lambda: messagebox.showerror("Download Error", f"Failed to download: {e}"))
+                self.after(0, lambda: self.status_var.set(f" Ready, Paste output and click Generate  |  {APP_VERSION}"))
+                
+        threading.Thread(target=do_download, daemon=True).start()
+
+    def finish_update(self, save_path, downloads_dir):
+        self.status_var.set(f" Download complete!  |  {APP_VERSION}")
+        messagebox.showinfo("Download Complete", f"Saved to:\n{save_path}\n\nPlease close this app and open the new version.")
+        
+        if os.name == 'nt':
+            os.startfile(downloads_dir)
+        elif sys.platform == 'darwin':
+            subprocess.Popen(['open', downloads_dir])
+        else:
+            subprocess.Popen(['xdg-open', downloads_dir])
 
     def paste_clipboard(self):
         try:
