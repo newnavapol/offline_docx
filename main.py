@@ -17,6 +17,9 @@ import sys
 import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
+
+APP_VERSION = 'v1.0.0'
+
 from tkinter import ttk, messagebox, filedialog
 
 # --- Path Resolution (works for both script and PyInstaller .exe) ---
@@ -453,7 +456,7 @@ class ManualEntryWindow(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
-        self.title("Manual IPD Entry Form")
+        self.title(f"Manual IPD Entry Form {APP_VERSION}")
         self.geometry("900x750")
         self.configure(bg="#1a1a2e")
         
@@ -735,7 +738,7 @@ class ManualEntryWindow(tk.Toplevel):
 class DocxGeneratorApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("IPD document generator")
+        self.title(f"IPD Document Generator {APP_VERSION}")
         self.geometry("750x650")
         self.configure(bg="#1a1a2e")
 
@@ -807,7 +810,7 @@ class DocxGeneratorApp(tk.Tk):
         btn_gen.pack(side="right", padx=4)
 
         # Status bar
-        self.status_var = tk.StringVar(value=" Ready, Paste output and click Generate")
+        self.status_var = tk.StringVar(value=f" Ready, Paste output and click Generate  |  {APP_VERSION}")
         status_bar = tk.Label(self, textvariable=self.status_var, font=("Arial", 9),
                               bg="#161b22", fg="#8b949e", anchor="w", padx=10, pady=4)
         status_bar.pack(fill="x", side="bottom")
