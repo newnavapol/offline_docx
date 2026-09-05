@@ -18,7 +18,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
 
-APP_VERSION = 'v1.1.0'
+APP_VERSION = 'v1.2.0'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -479,13 +479,13 @@ class ManualEntryWindow(tk.Toplevel):
         self.v_rr = tk.StringVar()
         self.v_sbp = tk.StringVar()
         self.v_dbp = tk.StringVar()
-        self.v_ga = tk.StringVar(value="Good consciousness")
-        self.v_heent = tk.StringVar(value="Normal")
-        self.v_cvs = tk.StringVar(value="Normal")
-        self.v_rs = tk.StringVar(value="Normal")
-        self.v_abd = tk.StringVar(value="Normal")
-        self.v_ext = tk.StringVar(value="Normal")
-        self.v_cns = tk.StringVar(value="Normal")
+        self.v_ga = tk.StringVar(value="alert, good consciousness")
+        self.v_heent = tk.StringVar(value="not pale conjunctiva, anicteric sclera, no LN")
+        self.v_cvs = tk.StringVar(value="CRT<2sec, pulse RA 2+")
+        self.v_rs = tk.StringVar(value="clear equal BS both")
+        self.v_abd = tk.StringVar(value="soft, not tender, no rebound, no guarding")
+        self.v_ext = tk.StringVar(value="no edema, no rash")
+        self.v_cns = tk.StringVar(value="grossly intact")
         self.v_pl = tk.StringVar()
         self.v_pdx = tk.StringVar()
         self.v_plan = tk.StringVar(value="Admit for management")
@@ -500,13 +500,20 @@ class ManualEntryWindow(tk.Toplevel):
         self.cb_tx_med = tk.BooleanVar(value=True)
         self.cb_tx_nb = tk.BooleanVar()
         self.cb_tx_prc = tk.BooleanVar()
-        self.v_pros = tk.StringVar(value="เพื่อการรักษา")
-        self.v_cons = tk.StringVar(value="อาจแพ้ยา")
-        self.v_alt = tk.StringVar(value="ปฏิเสธการรักษา")
-        self.v_outcome = tk.StringVar(value="อาการดีขึ้น")
-        self.v_duration = tk.StringVar(value="3-5 วัน")
+        self.v_pros = tk.StringVar(value="เพื่อให้ได้รับการรักษาที่เหมาะสมและปลอดภัย")
+        self.v_cons = tk.StringVar(value="อาจเกิดอาการแพ้ยา ติดเชื้อ หรือภาวะแทรกซ้อนอื่นๆ")
+        self.v_alt = tk.StringVar(value="ปฏิเสธการรักษาและกลับบ้าน (อาจมีความเสี่ยง)")
+        self.v_outcome = tk.StringVar(value="คาดว่าอาการดีขึ้นและกลับบ้านได้")
+        self.v_duration = tk.StringVar(value="ประมาณ 3-5 วัน")
         self.cb_risk_infect = tk.BooleanVar(value=True)
         self.cb_risk_fda = tk.BooleanVar(value=True)
+        self.cb_risk_prc_a = tk.BooleanVar()
+        self.cb_purp_else = tk.BooleanVar()
+        self.v_other_why = tk.StringVar()
+        self.cb_tx_else = tk.BooleanVar()
+        self.v_other_mx = tk.StringVar()
+        self.cb_risk_else = tk.BooleanVar()
+        self.v_other_comp = tk.StringVar()
         
         self.build_ui()
         
@@ -619,6 +626,8 @@ class ManualEntryWindow(tk.Toplevel):
         tk.Checkbutton(f_purp, text="Ix", variable=self.cb_purp_ix, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
         tk.Checkbutton(f_purp, text="Sx", variable=self.cb_purp_sx, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
         tk.Checkbutton(f_purp, text="Dx", variable=self.cb_purp_dx, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
+        tk.Checkbutton(f_purp, text="Other", variable=self.cb_purp_else, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
+        tk.Entry(f_purp, textvariable=self.v_other_why, width=15).pack(side="left", padx=5)
         
         # Tx
         tk.Label(f, text="Treatment:", bg="#21262d", fg="white").grid(row=2, column=0, sticky="w", pady=5, padx=10)
@@ -628,6 +637,8 @@ class ManualEntryWindow(tk.Toplevel):
         tk.Checkbutton(f_tx, text="Med", variable=self.cb_tx_med, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
         tk.Checkbutton(f_tx, text="NB", variable=self.cb_tx_nb, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
         tk.Checkbutton(f_tx, text="PRC", variable=self.cb_tx_prc, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
+        tk.Checkbutton(f_tx, text="Other", variable=self.cb_tx_else, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
+        tk.Entry(f_tx, textvariable=self.v_other_mx, width=15).pack(side="left", padx=5)
         
         # Risks
         tk.Label(f, text="Risks:", bg="#21262d", fg="white").grid(row=3, column=0, sticky="w", pady=5, padx=10)
@@ -635,6 +646,9 @@ class ManualEntryWindow(tk.Toplevel):
         f_risk.grid(row=3, column=1, columnspan=3, sticky="w")
         tk.Checkbutton(f_risk, text="Infect", variable=self.cb_risk_infect, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
         tk.Checkbutton(f_risk, text="FDA", variable=self.cb_risk_fda, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
+        tk.Checkbutton(f_risk, text="PRC_A", variable=self.cb_risk_prc_a, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
+        tk.Checkbutton(f_risk, text="Other", variable=self.cb_risk_else, bg="#21262d", fg="white", selectcolor="#1a1a2e").pack(side="left")
+        tk.Entry(f_risk, textvariable=self.v_other_comp, width=15).pack(side="left", padx=5)
         
         tk.Label(f, text="Pros:", bg="#21262d", fg="white").grid(row=4, column=0, sticky="w", pady=5, padx=10)
         tk.Entry(f, textvariable=self.v_pros, width=50).grid(row=4, column=1, columnspan=3, sticky="w")
@@ -706,16 +720,20 @@ class ManualEntryWindow(tk.Toplevel):
         if self.cb_purp_ix.get(): purps.append("Ix")
         if self.cb_purp_sx.get(): purps.append("Sx")
         if self.cb_purp_dx.get(): purps.append("Dx")
+        if self.cb_purp_else.get(): purps.append("Other")
         
         txs = []
         if self.cb_tx_iv.get(): txs.append("IV")
         if self.cb_tx_med.get(): txs.append("Med")
         if self.cb_tx_nb.get(): txs.append("NB")
         if self.cb_tx_prc.get(): txs.append("PRC")
+        if self.cb_tx_else.get(): txs.append("Other")
         
         risks = []
         if self.cb_risk_infect.get(): risks.append("Infect")
         if self.cb_risk_fda.get(): risks.append("FDA")
+        if self.cb_risk_prc_a.get(): risks.append("PRC_A")
+        if self.cb_risk_else.get(): risks.append("Other")
         
         out.append("[Consent_Data]")
         out.append(f"[Dx_Consent]: {self.v_dx_consent.get() or self.v_pdx.get()}")
@@ -727,6 +745,9 @@ class ManualEntryWindow(tk.Toplevel):
         out.append(f"[Outcome_Consent]: {self.v_outcome.get()}")
         out.append(f"[Duration_Consent]: {self.v_duration.get()}")
         out.append(f"[Risk_Consent]: {','.join(risks)}")
+        out.append(f"[Other_Why_Consent]: {self.v_other_why.get()}")
+        out.append(f"[Other_Mx_Consent]: {self.v_other_mx.get()}")
+        out.append(f"[Other_Comp_Consent]: {self.v_other_comp.get()}")
         out.append("[/Consent_Data]")
         
         compiled_text = "\n".join(out)
