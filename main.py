@@ -18,7 +18,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
 
-APP_VERSION = 'v1.2.3'
+APP_VERSION = 'v1.2.4'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -826,6 +826,12 @@ class DocxGeneratorApp(tk.Tk):
                                  relief="flat", padx=12, pady=6, cursor="hand2")
         btn_template.pack(side="left", padx=4)
 
+        btn_update = tk.Button(btn_frame2, text="Check for Updates", command=lambda: __import__('threading').Thread(target=self.check_for_updates, args=(True,), daemon=True).start(),
+                               bg="#21262d", fg="#c9d1d9", font=("Arial", 10),
+                               activebackground="#30363d", activeforeground="#fff",
+                               relief="flat", padx=12, pady=6, cursor="hand2")
+        btn_update.pack(side="left", padx=4)
+
         btn_gen = tk.Button(btn_frame2, text="Generate Documents", command=self.run_generate,
                             bg="#238636", fg="#ffffff", font=("Arial", 11, "bold"),
                             activebackground="#2ea043", activeforeground="#fff",
@@ -978,7 +984,7 @@ Name Surname
             subprocess.Popen(['xdg-open', self.last_generated_dir])
 
 
-    def check_for_updates(self):
+    def check_for_updates(self, manual=False):
         try:
             import urllib.request
             import json
@@ -1004,7 +1010,11 @@ Name Surname
                 
                 if download_url:
                     self.after(0, lambda: self.prompt_update(latest_version, download_url, filename))
+            elif manual:
+                self.after(0, lambda: messagebox.showinfo("Up to date", f"You are running the latest version ({APP_VERSION}).", parent=self))
         except Exception as e:
+            if manual:
+                self.after(0, lambda: messagebox.showerror("Update Error", f"Failed to check for updates:\n{e}", parent=self))
             print(f"Update check failed: {e}")
 
     def prompt_update(self, latest_version, download_url, filename):
@@ -1057,6 +1067,14 @@ Name Surname
         self.status_var.set("Cleared.")
 
     def run_generate(self):
+        try:
+            self._run_generate_impl()
+        except Exception as e:
+            import traceback
+            err = traceback.format_exc()
+            self.after(0, lambda: messagebox.showerror("CRITICAL ERROR", f"An unexpected error occurred:\n\n{err}", parent=self))
+
+    def _run_generate_impl(self):
         text = self.txt_input.get("1.0", tk.END).strip()
         if not text:
             messagebox.showwarning("Input Required", "Please paste the Admission Order text before generating.", parent=self)
