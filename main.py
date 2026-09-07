@@ -18,7 +18,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
 
-APP_VERSION = 'v1.2.2'
+APP_VERSION = 'v1.2.3'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -958,12 +958,12 @@ Name Surname
 
     def change_save_dir(self):
         initial = self.base_save_dir if self.base_save_dir else os.path.expanduser("~/Desktop")
-        new_dir = filedialog.askdirectory(title="Select Default Base Folder", initialdir=initial)
+        new_dir = filedialog.askdirectory(title="Select Default Base Folder", initialdir=initial, parent=self)
         if new_dir:
             self.base_save_dir = new_dir
             self.save_config(new_dir)
             self.status_var.set(f"Default save folder updated: {new_dir}")
-            messagebox.showinfo("Folder Saved", f"Default save folder is now:\n{new_dir}")
+            messagebox.showinfo("Folder Saved", f"Default save folder is now:\n{new_dir}", parent=self)
 
     def open_last_folder(self):
         if not self.last_generated_dir or not os.path.exists(self.last_generated_dir):
@@ -1008,7 +1008,7 @@ Name Surname
             print(f"Update check failed: {e}")
 
     def prompt_update(self, latest_version, download_url, filename):
-        if messagebox.askyesno("Update Available", f"Version {latest_version} is available!\n\nWould you like to download it to your Downloads folder now?"):
+        if messagebox.askyesno("Update Available", f"Version {latest_version} is available!\n\nWould you like to download it to your Downloads folder now?", parent=self):
             self.download_update(download_url, filename)
 
     def download_update(self, url, filename):
@@ -1027,14 +1027,14 @@ Name Surname
                 
                 self.after(0, lambda: self.finish_update(save_path, downloads_dir))
             except Exception as e:
-                self.after(0, lambda: messagebox.showerror("Download Error", f"Failed to download: {e}"))
+                self.after(0, lambda: messagebox.showerror("Download Error", f"Failed to download: {e}", parent=self))
                 self.after(0, lambda: self.status_var.set(f" Ready, Paste output and click Generate  |  {APP_VERSION}"))
                 
         threading.Thread(target=do_download, daemon=True).start()
 
     def finish_update(self, save_path, downloads_dir):
         self.status_var.set(f" Download complete!  |  {APP_VERSION}")
-        messagebox.showinfo("Download Complete", f"Saved to:\n{save_path}\n\nPlease close this app and open the new version.")
+        messagebox.showinfo("Download Complete", f"Saved to:\n{save_path}\n\nPlease close this app and open the new version.", parent=self)
         
         if os.name == 'nt':
             os.startfile(downloads_dir)
@@ -1050,7 +1050,7 @@ Name Surname
             self.txt_input.insert("1.0", text)
             self.status_var.set(f"Pasted {len(text)} characters from clipboard.")
         except Exception:
-            messagebox.showwarning("Clipboard", "Clipboard is empty or contains non-text data.")
+            messagebox.showwarning("Clipboard", "Clipboard is empty or contains non-text data.", parent=self)
 
     def clear_input(self):
         self.txt_input.delete("1.0", tk.END)
@@ -1059,13 +1059,13 @@ Name Surname
     def run_generate(self):
         text = self.txt_input.get("1.0", tk.END).strip()
         if not text:
-            messagebox.showwarning("Input Required", "Please paste the Admission Order text before generating.")
+            messagebox.showwarning("Input Required", "Please paste the Admission Order text before generating.", parent=self)
             return
 
         # Ensure base save directory is selected
         if not self.base_save_dir or not os.path.exists(self.base_save_dir):
-            messagebox.showinfo("Select Save Location", "Please select a base folder to save your DOCX files.\n\nYou only need to do this once.")
-            new_dir = filedialog.askdirectory(title="Select Default Base Folder", initialdir=os.path.expanduser("~/Desktop"))
+            messagebox.showinfo("Select Save Location", "Please select a base folder to save your DOCX files.\n\nYou only need to do this once.", parent=self)
+            new_dir = filedialog.askdirectory(title="Select Default Base Folder", initialdir=os.path.expanduser("~/Desktop"), parent=self)
             if not new_dir:
                 return
             self.base_save_dir = new_dir
@@ -1133,7 +1133,7 @@ Name Surname
             # Automatically open the folder
             self.open_last_folder()
         else:
-            messagebox.showerror("Error", f"Failed to generate any files.\n\n" + "\n".join(errors))
+            messagebox.showerror("Error", f"Failed to generate any files.\n\n" + "\n".join(errors), parent=self)
             self.status_var.set("Generation failed.")
 
 
