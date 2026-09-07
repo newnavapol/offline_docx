@@ -18,7 +18,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
 
-APP_VERSION = 'v1.2.4'
+APP_VERSION = 'v1.2.5'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -80,11 +80,22 @@ def clean_pdx(raw_pdx: str) -> str:
 def extract_first_diagnosis(text: str, max_len: int = 100) -> str:
     if not text:
         return ""
-    m = re.search(r'[A-Z]\d{2}(?:\.\d+)?\s*[-:]?\s*([^\n]+)', text, flags=re.I)
+    # Try to find [PDx] tag from manual entry
+    m_pdx = __import__('re').search(r'\[PDx\][ \t]*[:=]?[ \t]*([^\n]+)', text, flags=__import__('re').I)
+    if m_pdx:
+        return m_pdx.group(1).strip()[:max_len]
+        
+    # Try to find standard ICD-10 pattern
+    m = __import__('re').search(r'[A-Z]\d{2}(?:\.\d+)?\s*[-:]?\s*([^\n]+)', text, flags=__import__('re').I)
     if m:
         return m.group(1).strip()[:max_len]
-    return text.strip()[:max_len]
-
+        
+    # Try to find Diagnosis line
+    m_diag = __import__('re').search(r'Diagnosis[ \t]*[:=]?[ \t]*([^\n]+)', text, flags=__import__('re').I)
+    if m_diag:
+        return m_diag.group(1).strip()[:max_len]
+        
+    return "Admit"
 
 def merge_docx_namespaces(orig_xml_str: str, generated_xml_bytes: bytes) -> bytes:
     """
@@ -1099,7 +1110,8 @@ Name Surname
         dx = extract_first_diagnosis(text, max_len=100)
         if not dx:
             dx = "Admit"
-        safe_dx = re.sub(r'[^a-zA-Z0-9\-\s]', '_', clean_pdx(dx)).strip().replace(' ', '_')
+        safe_dx = re.sub(r'[^a-zA-Z0-9\-]', '_', clean_pdx(dx)).strip()[:50]
+        safe_dx = re.sub(r'_+', '_', safe_dx)
 
         # Build dynamic subfolder: YYYY/MM/DD/HN_Dx
         now = datetime.now()
