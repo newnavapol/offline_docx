@@ -18,7 +18,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
 
-APP_VERSION = 'v1.2.1'
+APP_VERSION = 'v1.2.2'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -896,13 +896,13 @@ Name Surname
 [RR]: 20
 [SBP]: 120
 [DBP]: 80
-[GA]: Good consciousness
-[HEENT]: Normal
-[CVS]: Normal
-[RS]: Normal
-[Abd]: Normal
-[Ext]: Normal
-[CNS]: Normal
+[GA]: alert, good consciousness
+[HEENT]: not pale conjunctiva, anicteric sclera, no LN
+[CVS]: CRT<2sec, pulse RA 2+
+[RS]: clear equal BS both
+[Abd]: soft, not tender, no rebound, no guarding
+[Ext]: no edema, no rash
+[CNS]: grossly intact
 [PL]: Problem List
 [PDx]: Primary Diagnosis
 [Plan]: Admit for management
@@ -910,14 +910,17 @@ Name Surname
 
 [Consent_Data]
 [Dx_Consent]: Primary Diagnosis
-[Purpose_Consent]: Mx, Ix
-[Tx_Consent]: IV, Med
-[Pros_Consent]: เพื่อการรักษา
-[Cons_Consent]: อาจแพ้ยา
-[Alt_Consent]: ปฏิเสธการรักษา
-[Outcome_Consent]: อาการดีขึ้น
-[Duration_Consent]: 3-5 วัน
-[Risk_Consent]: Infect, FDA
+[Purpose_Consent]: Mx, Ix, Other
+[Other_Why_Consent]: 
+[Tx_Consent]: IV, Med, Other
+[Other_Mx_Consent]: 
+[Pros_Consent]: เพื่อให้ได้รับการรักษาที่เหมาะสมและปลอดภัย
+[Cons_Consent]: อาจเกิดอาการแพ้ยา ติดเชื้อ หรือภาวะแทรกซ้อนอื่นๆ
+[Alt_Consent]: ปฏิเสธการรักษาและกลับบ้าน (อาจมีความเสี่ยง)
+[Outcome_Consent]: คาดว่าอาการดีขึ้นและกลับบ้านได้
+[Duration_Consent]: ประมาณ 3-5 วัน
+[Risk_Consent]: Infect, FDA, PRC_A, Other
+[Other_Comp_Consent]: 
 [/Consent_Data]"""
         
         txt.insert("1.0", template_text)
