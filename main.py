@@ -18,7 +18,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
 
-APP_VERSION = 'v1.2.5'
+APP_VERSION = 'v1.2.6'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -41,7 +41,8 @@ def strip_markdown_tags(text: str) -> str:
         return ""
     text = re.sub(r'```[a-z]*', '', text, flags=re.I)
     text = re.sub(r'\*\*', '', text)
-    text = re.sub(r'<[^>]+>', '', text)
+    # Only match actual HTML tags to avoid destroying math symbols like < 14 or > 24
+    text = re.sub(r'<[/]?[a-zA-Z]+[^>]*>', '', text)
     return text.strip()
 
 
