@@ -18,7 +18,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
 
-APP_VERSION = 'v1.2.6'
+APP_VERSION = 'v1.2.7'
 
 from tkinter import ttk, messagebox, filedialog
 
