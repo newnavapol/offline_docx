@@ -18,7 +18,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
 
-APP_VERSION = 'v1.2.7'
+APP_VERSION = 'v1.2.8'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -579,14 +579,17 @@ class ManualEntryWindow(tk.Toplevel):
         self.tab_hxpe = tk.Frame(self.notebook, bg="#21262d")
         self.tab_consent = tk.Frame(self.notebook, bg="#21262d")
         self.tab_order = tk.Frame(self.notebook, bg="#21262d")
+        self.tab_advice = tk.Frame(self.notebook, bg="#21262d")
         
         self.notebook.add(self.tab_hxpe, text="Hx & PE")
         self.notebook.add(self.tab_consent, text="Consent")
         self.notebook.add(self.tab_order, text="Orders")
+        self.notebook.add(self.tab_advice, text="Advice")
         
         self.build_hxpe_tab()
         self.build_consent_tab()
         self.build_order_tab()
+        self.build_advice_tab()
         
         # Bottom Buttons
         bottom_frame = tk.Frame(self, bg="#1a1a2e")
@@ -721,6 +724,14 @@ class ManualEntryWindow(tk.Toplevel):
         self.t_cont = tk.Text(f, height=5, width=80)
         self.t_cont.pack(pady=5, padx=10)
 
+    def build_advice_tab(self):
+        f = self.tab_advice
+        
+        tk.Label(f, text="Discharge Advice:", bg="#21262d", fg="white").pack(anchor="w", pady=(5,0), padx=10)
+        self.t_advice = tk.Text(f, height=15, width=80)
+        self.t_advice.pack(pady=5, padx=10)
+        self.t_advice.insert("1.0", "คำแนะนำการดูแลตนเองและข้อควรปฏิบัติ:\nวันนี้เป็นอะไร (การวินิจฉัย):\n- \nการรักษาที่ได้รับไปแล้ว:\n- \nให้ทำอย่างไรต่อเมื่อกลับบ้าน:\n- \nอาการอันตรายที่ต้องรีบกลับมาพบแพทย์ทันที:\n- ")
+
     def generate_docs(self):
         out = []
         
@@ -731,6 +742,10 @@ class ManualEntryWindow(tk.Toplevel):
         out.append(f"[PL_Order]\n{self.t_pl.get('1.0', tk.END).strip()}\n[/PL_Order]\n")
         out.append(f"[One_Order]\n{self.t_one.get('1.0', tk.END).strip()}\n[/One_Order]\n")
         out.append(f"[Cont_Order]\n{self.t_cont.get('1.0', tk.END).strip()}\n[/Cont_Order]\n")
+        
+        advice_text = self.t_advice.get('1.0', tk.END).strip()
+        if advice_text:
+            out.append(f"[Discharge_Advice]\n{advice_text}\n[/Discharge_Advice]\n")
         
         out.append("[HP_Data]")
         out.append(f"[CC]: {self.v_cc.get()}")
