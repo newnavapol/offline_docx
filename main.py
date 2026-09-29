@@ -28,7 +28,7 @@ def get_unique_filename(output_dir: str, base_filename: str) -> str:
     return filename
 
 
-APP_VERSION = 'v1.3.4'
+APP_VERSION = 'v1.3.5'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -495,61 +495,72 @@ def fill_advice_template(template_path: str, replacements: dict, output_path: st
         for fname, fbytes in all_files.items():
             zout.writestr(fname, fbytes)
 
-def generate_discharge_advice(raw_text: str, output_dir: str) -> str:
-    """Generate Discharge Advice .docx."""
-    template_path = os.path.join(TEMPLATES_DIR, "Advice_Template.docx")
-    if not os.path.exists(template_path):
-        raise FileNotFoundError(f"Template not found: {template_path}")
-
+def generate_discharge_advice(raw_text: str, output_dir: str) -> list[str]:
+    """Generate Discharge Advice .docx files (Thai and/or Translated)."""
     clean = strip_markdown_tags(raw_text)
     
-    advice_block = extract_multiline_tag(clean, "Discharge_Advice", "")
-    if not advice_block:
-        # If no discharge advice block is present, do not generate the file.
-        return None
-
     hn = extract_multiline_tag(clean, "Pt_HN", "Unregistered")
     if not hn or hn == "-":
         hn = extract_tag(clean, "HN", 20, "Unregistered")
-
-    # Parse advice into 4 distinct placeholders
-    parts = re.split(r'(วันนี้เป็นอะไร|การรักษาที่ได้รับไปแล้ว|ให้ทำอย่างไรต่อเมื่อกลับบ้าน|อาการอันตรายที่ต้องรีบกลับมาพบแพทย์ทันที).*?:', advice_block)
-    
-    advice_dx = ""
-    advice_tx = ""
-    advice_home = ""
-    advice_red = ""
-    
-    current_key = None
-    for part in parts:
-        part = part.strip()
-        if "วันนี้เป็นอะไร" in part: current_key = "Dx"
-        elif "การรักษาที่ได้รับไปแล้ว" in part: current_key = "Tx"
-        elif "ให้ทำอย่างไรต่อเมื่อกลับบ้าน" in part: current_key = "Home"
-        elif "อาการอันตรายที่ต้องรีบกลับมาพบแพทย์ทันที" in part: current_key = "RedFlags"
-        elif current_key:
-            val = part
-            if current_key == "Dx": advice_dx = val
-            elif current_key == "Tx": advice_tx = val
-            elif current_key == "Home": advice_home = val
-            elif current_key == "RedFlags": advice_red = val
-            current_key = None
-
-    replacements = {
-        "{Advice_Dx}": advice_dx,
-        "{Advice_Tx}": advice_tx,
-        "{Advice_Home}": advice_home,
-        "{Advice_RedFlags}": advice_red,
-        # Keep this for backward compatibility if the old template is used
-        "{Discharge_Advice}": advice_block
-    }
-
     safe_hn = re.sub(r'[^a-zA-Z0-9]', '_', hn) or "Guest"
-    filename = get_unique_filename(output_dir, f"Advice_{safe_hn}.docx")
-    output_path = os.path.join(output_dir, filename)
 
-    fill_advice_template(template_path, replacements, output_path)
-    return output_path
+    generated_paths = []
+
+    def parse_and_fill(block_text: str, lang_suffix: str, template_filename: str):
+        if not block_text:
+            return
+        
+        template_path = os.path.join(TEMPLATES_DIR, template_filename)
+        if not os.path.exists(template_path):
+            # Fallback to default
+            template_path = os.path.join(TEMPLATES_DIR, "Advice_Template.docx")
+            if not os.path.exists(template_path):
+                raise FileNotFoundError(f"Template not found: Advice_Template.docx")
+
+        parts = re.split(r'(วันนี้เป็นอะไร|การรักษาที่ได้รับไปแล้ว|ให้ทำอย่างไรต่อเมื่อกลับบ้าน|อาการอันตรายที่ต้องรีบกลับมาพบแพทย์ทันที).*?:', block_text)
+        
+        advice_dx, advice_tx, advice_home, advice_red = "", "", "", ""
+        current_key = None
+        for part in parts:
+            part = part.strip()
+            if "วันนี้เป็นอะไร" in part: current_key = "Dx"
+            elif "การรักษาที่ได้รับไปแล้ว" in part: current_key = "Tx"
+            elif "ให้ทำอย่างไรต่อเมื่อกลับบ้าน" in part: current_key = "Home"
+            elif "อาการอันตรายที่ต้องรีบกลับมาพบแพทย์ทันที" in part: current_key = "RedFlags"
+            elif current_key:
+                val = part
+                if current_key == "Dx": advice_dx = val
+                elif current_key == "Tx": advice_tx = val
+                elif current_key == "Home": advice_home = val
+                elif current_key == "RedFlags": advice_red = val
+                current_key = None
+
+        replacements = {
+            "{Advice_Dx}": advice_dx,
+            "{Advice_Tx}": advice_tx,
+            "{Advice_Home}": advice_home,
+            "{Advice_RedFlags}": advice_red,
+            "{Discharge_Advice}": block_text
+        }
+
+        filename = get_unique_filename(output_dir, f"Advice_{lang_suffix}_{safe_hn}.docx")
+        output_path = os.path.join(output_dir, filename)
+        fill_advice_template(template_path, replacements, output_path)
+        generated_paths.append(output_path)
+
+    # 1. Thai Version
+    thai_block = extract_multiline_tag(clean, "Discharge_Advice", "")
+    if thai_block:
+        parse_and_fill(thai_block, "Thai", "Advice_Template.docx")
+
+    # 2. Translated Version
+    trans_block = extract_multiline_tag(clean, "Discharge_Advice_Trans", "")
+    if trans_block:
+        lang = extract_multiline_tag(clean, "Discharge_Language", "Unknown").strip().capitalize()
+        template_name = f"Advice_Template_{lang}.docx"
+        parse_and_fill(trans_block, lang, template_name)
+
+    return generated_paths
 
 def generate_informed_consent(raw_text: str, output_dir: str) -> str:
     """Generate Informed Consent .docx from Admission Order output."""
@@ -1350,9 +1361,10 @@ Name Surname
 
         # Generate Discharge Advice
         try:
-            path = generate_discharge_advice(text, out_dir)
-            if path:
-                generated.append(os.path.basename(path))
+            paths = generate_discharge_advice(text, out_dir)
+            if paths:
+                for p in paths:
+                    generated.append(os.path.basename(p))
         except Exception as e:
             errors.append(f"Discharge Advice: {e}")
 
