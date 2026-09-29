@@ -18,7 +18,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
 
-APP_VERSION = 'v1.2.8'
+APP_VERSION = 'v1.2.9'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -156,9 +156,35 @@ def fill_textbox_template(template_path: str, replacements: dict, output_path: s
 
                     all_t_nodes = p.findall('.//w:t', ns)
                     if all_t_nodes:
-                        all_t_nodes[0].text = val
-                        for ot in all_t_nodes[1:]:
+                        # Clear existing text
+                        for ot in all_t_nodes:
                             ot.text = ''
+                        
+                        # Handle multiline using <w:br/>
+                        lines = val.split('\n')
+                        
+                        # Add first line to the first <w:t>
+                        all_t_nodes[0].text = lines[0]
+                        
+                        # For subsequent lines, we need to append <w:br/> and <w:t>
+                        # But ElementTree makes it hard to insert siblings easily without knowing the parent <w:r>
+                        # Let's just append to the parent <w:r> of the first <w:t>
+                        if len(lines) > 1:
+                            # In python xml.etree, parent is not directly accessible.
+                            # We can find the <w:r> containing the first <w:t> by searching p
+                            first_t = all_t_nodes[0]
+                            parent_r = None
+                            for r in p.findall('.//w:r', ns):
+                                if first_t in r.findall('.//w:t', ns):
+                                    parent_r = r
+                                    break
+                            
+                            if parent_r is not None:
+                                for line in lines[1:]:
+                                    import xml.etree.ElementTree as ET
+                                    ET.SubElement(parent_r, f'{{{ns["w"]}}}br')
+                                    new_t = ET.SubElement(parent_r, f'{{{ns["w"]}}}t')
+                                    new_t.text = line
 
                     r_nodes = p.findall('.//w:r', ns)
                     if r_nodes:
