@@ -28,7 +28,7 @@ def get_unique_filename(output_dir: str, base_filename: str) -> str:
     return filename
 
 
-APP_VERSION = 'v1.3.3'
+APP_VERSION = 'v1.3.4'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -469,6 +469,23 @@ def fill_advice_template(template_path: str, replacements: dict, output_path: st
                 for ot in t_nodes:
                     ot.text = ''
                 t_nodes[0].text = line
+            
+            # Force Myanmar Text font for complex scripts (supports Burmese, Mon, Karen)
+            for r in target_p.findall('.//w:r', ns):
+                rPr = r.find('w:rPr', ns)
+                if rPr is None:
+                    rPr = ET.Element(f'{{{ns["w"]}}}rPr')
+                    r.insert(0, rPr)
+                rFonts = rPr.find('w:rFonts', ns)
+                if rFonts is None:
+                    rFonts = ET.SubElement(rPr, f'{{{ns["w"]}}}rFonts')
+                rFonts.attrib[f'{{{ns["w"]}}}cs'] = 'Myanmar Text'
+                
+                # Ensure the text is not too small in complex script mode
+                szCs = rPr.find('w:szCs', ns)
+                if szCs is None:
+                    szCs = ET.SubElement(rPr, f'{{{ns["w"]}}}szCs')
+                    szCs.attrib[f'{{{ns["w"]}}}val'] = '24'  # 12pt for Myanmar Text
 
     new_xml_bytes = ET.tostring(root, encoding='utf-8', xml_declaration=True)
     new_xml_bytes = merge_docx_namespaces(xml_str_decoded, new_xml_bytes)
