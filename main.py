@@ -17,8 +17,17 @@ import sys
 import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
+def get_unique_filename(output_dir: str, base_filename: str) -> str:
+    name, ext = os.path.splitext(base_filename)
+    counter = 1
+    filename = base_filename
+    while os.path.exists(os.path.join(output_dir, filename)):
+        counter += 1
+        filename = f"{name}_{counter}{ext}"
+    return filename
 
-APP_VERSION = 'v1.3.1'
+
+APP_VERSION = 'v1.3.2'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -313,7 +322,7 @@ def generate_doctor_order(raw_text: str, output_dir: str) -> str:
     }
 
     safe_hn = re.sub(r'[^a-zA-Z0-9]', '_', hn) or "Guest"
-    filename = f"Doctor_Order_{safe_hn}.docx"
+    filename = get_unique_filename(output_dir, f"Doctor_Order_{safe_hn}.docx")
     output_path = os.path.join(output_dir, filename)
 
     fill_advice_template(template_path, replacements, output_path)
@@ -386,7 +395,7 @@ def generate_inpatient_hp(raw_text: str, output_dir: str) -> str:
     }
 
     safe_hn = re.sub(r'[^a-zA-Z0-9]', '_', hn) or "Guest"
-    filename = f"Inpatient_HP_{safe_hn}.docx"
+    filename = get_unique_filename(output_dir, f"Inpatient_HP_{safe_hn}.docx")
     output_path = os.path.join(output_dir, filename)
 
     fill_textbox_template(template_path, replacements, output_path)
@@ -518,7 +527,7 @@ def generate_discharge_advice(raw_text: str, output_dir: str) -> str:
     }
 
     safe_hn = re.sub(r'[^a-zA-Z0-9]', '_', hn) or "Guest"
-    filename = f"Advice_{safe_hn}.docx"
+    filename = get_unique_filename(output_dir, f"Advice_{safe_hn}.docx")
     output_path = os.path.join(output_dir, filename)
 
     fill_advice_template(template_path, replacements, output_path)
@@ -605,7 +614,7 @@ def generate_informed_consent(raw_text: str, output_dir: str) -> str:
     }
 
     safe_hn = re.sub(r'[^a-zA-Z0-9]', '_', hn) or "Guest"
-    filename = f"Informed_Consent_{safe_hn}.docx"
+    filename = get_unique_filename(output_dir, f"Informed_Consent_{safe_hn}.docx")
     output_path = os.path.join(output_dir, filename)
 
     fill_textbox_template(template_path, replacements, output_path)
