@@ -10,3 +10,19 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Security & Secrets
+.env*
+*credential*.json
+*secret*.json
+*.pem
+*.key
+
+# Tests, Scratches & Local Outputs (Prevent PHI leak)
+test_*.py
+patch*.py
+fix_*.py
+*_debug.py
+*_headless.py
+test_out/
+scratch/
