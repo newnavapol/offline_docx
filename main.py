@@ -367,6 +367,35 @@ def generate_inpatient_hp(raw_text: str, output_dir: str) -> str:
     return output_path
 
 
+
+def generate_discharge_advice(raw_text: str, output_dir: str) -> str:
+    """Generate Discharge Advice .docx."""
+    template_path = os.path.join(TEMPLATES_DIR, "Advice_Template.docx")
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"Template not found: {template_path}")
+
+    clean = strip_markdown_tags(raw_text)
+    
+    advice = extract_multiline_tag(clean, "Discharge_Advice", "")
+    if not advice:
+        # If no discharge advice block is present, do not generate the file.
+        return None
+
+    hn = extract_multiline_tag(clean, "Pt_HN", "Unregistered")
+    if not hn or hn == "-":
+        hn = extract_tag(clean, "HN", 20, "Unregistered")
+
+    replacements = {
+        "{Discharge_Advice}": advice
+    }
+
+    safe_hn = re.sub(r'[^a-zA-Z0-9]', '_', hn) or "Guest"
+    filename = f"Advice_{safe_hn}.docx"
+    output_path = os.path.join(output_dir, filename)
+
+    fill_paragraph_template(template_path, replacements, output_path)
+    return output_path
+
 def generate_informed_consent(raw_text: str, output_dir: str) -> str:
     """Generate Informed Consent .docx from Admission Order output."""
     template_path = os.path.join(TEMPLATES_DIR, "infomed_consent_template.docx")
@@ -1148,6 +1177,14 @@ Name Surname
             generated.append(os.path.basename(path))
         except Exception as e:
             errors.append(f"Informed Consent: {e}")
+
+        # Generate Discharge Advice
+        try:
+            path = generate_discharge_advice(text, out_dir)
+            if path:
+                generated.append(os.path.basename(path))
+        except Exception as e:
+            errors.append(f"Discharge Advice: {e}")
 
         # Show results and enable open folder button
         if generated:
