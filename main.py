@@ -18,7 +18,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import tkinter as tk
 
-APP_VERSION = 'v1.2.9'
+APP_VERSION = 'v1.3.0'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -316,7 +316,7 @@ def generate_doctor_order(raw_text: str, output_dir: str) -> str:
     filename = f"Doctor_Order_{safe_hn}.docx"
     output_path = os.path.join(output_dir, filename)
 
-    fill_paragraph_template(template_path, replacements, output_path)
+    fill_advice_template(template_path, replacements, output_path)
     return output_path
 
 
@@ -394,6 +394,80 @@ def generate_inpatient_hp(raw_text: str, output_dir: str) -> str:
 
 
 
+import copy
+
+def fill_advice_template(template_path: str, replacements: dict, output_path: str):
+    with zipfile.ZipFile(template_path, 'r') as zin:
+        xml_bytes = zin.read('word/document.xml')
+        all_files = {name: zin.read(name) for name in zin.namelist() if name != 'word/document.xml'}
+
+    xml_str_decoded = xml_bytes.decode('utf-8')
+    ns_matches = re.findall(r'xmlns:([a-zA-Z0-9_]+)="([^"]+)"', xml_str_decoded)
+    for prefix, uri in set(ns_matches):
+        ET.register_namespace(prefix, uri)
+
+    root = ET.fromstring(xml_bytes)
+    ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+    
+    parent_map = {c: p for p in root.iter() for c in p}
+    modifications = []
+
+    for p in root.iter(f'{{{ns["w"]}}}p'):
+        all_t_nodes = p.findall('.//w:t', ns)
+        if not all_t_nodes:
+            continue
+        full_text = ''.join(t.text for t in all_t_nodes if t.text).strip()
+        
+        matched_key = None
+        matched_val = None
+        for key, val in replacements.items():
+            if key in full_text and len(full_text) < len(key) + 10:
+                matched_key = key
+                matched_val = val
+                break
+        
+        if matched_key:
+            modifications.append((p, matched_key, matched_val))
+
+    for p, matched_key, matched_val in modifications:
+        parent = parent_map.get(p)
+        if parent is None:
+            continue
+            
+        idx = list(parent).index(p)
+        lines = [line.strip() for line in matched_val.split('\n') if line.strip()]
+        if not lines:
+            # clear the placeholder if empty
+            for ot in p.findall('.//w:t', ns):
+                ot.text = ''
+            continue
+            
+        cleaned_lines = []
+        for line in lines:
+            line = re.sub(r'^[-*]\s+', '', line)
+            cleaned_lines.append(line)
+
+        for i, line in enumerate(cleaned_lines):
+            if i == 0:
+                target_p = p
+            else:
+                target_p = copy.deepcopy(p)
+                parent.insert(idx + i, target_p)
+                
+            t_nodes = target_p.findall('.//w:t', ns)
+            if t_nodes:
+                for ot in t_nodes:
+                    ot.text = ''
+                t_nodes[0].text = line
+
+    new_xml_bytes = ET.tostring(root, encoding='utf-8', xml_declaration=True)
+    new_xml_bytes = merge_docx_namespaces(xml_str_decoded, new_xml_bytes)
+
+    with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zout:
+        zout.writestr('word/document.xml', new_xml_bytes)
+        for fname, fbytes in all_files.items():
+            zout.writestr(fname, fbytes)
+
 def generate_discharge_advice(raw_text: str, output_dir: str) -> str:
     """Generate Discharge Advice .docx."""
     template_path = os.path.join(TEMPLATES_DIR, "Advice_Template.docx")
@@ -402,8 +476,8 @@ def generate_discharge_advice(raw_text: str, output_dir: str) -> str:
 
     clean = strip_markdown_tags(raw_text)
     
-    advice = extract_multiline_tag(clean, "Discharge_Advice", "")
-    if not advice:
+    advice_block = extract_multiline_tag(clean, "Discharge_Advice", "")
+    if not advice_block:
         # If no discharge advice block is present, do not generate the file.
         return None
 
@@ -411,15 +485,43 @@ def generate_discharge_advice(raw_text: str, output_dir: str) -> str:
     if not hn or hn == "-":
         hn = extract_tag(clean, "HN", 20, "Unregistered")
 
+    # Parse advice into 4 distinct placeholders
+    parts = re.split(r'(วันนี้เป็นอะไร|การรักษาที่ได้รับไปแล้ว|ให้ทำอย่างไรต่อเมื่อกลับบ้าน|อาการอันตรายที่ต้องรีบกลับมาพบแพทย์ทันที).*?:', advice_block)
+    
+    advice_dx = ""
+    advice_tx = ""
+    advice_home = ""
+    advice_red = ""
+    
+    current_key = None
+    for part in parts:
+        part = part.strip()
+        if "วันนี้เป็นอะไร" in part: current_key = "Dx"
+        elif "การรักษาที่ได้รับไปแล้ว" in part: current_key = "Tx"
+        elif "ให้ทำอย่างไรต่อเมื่อกลับบ้าน" in part: current_key = "Home"
+        elif "อาการอันตรายที่ต้องรีบกลับมาพบแพทย์ทันที" in part: current_key = "RedFlags"
+        elif current_key:
+            val = part
+            if current_key == "Dx": advice_dx = val
+            elif current_key == "Tx": advice_tx = val
+            elif current_key == "Home": advice_home = val
+            elif current_key == "RedFlags": advice_red = val
+            current_key = None
+
     replacements = {
-        "{Discharge_Advice}": advice
+        "{Advice_Dx}": advice_dx,
+        "{Advice_Tx}": advice_tx,
+        "{Advice_Home}": advice_home,
+        "{Advice_RedFlags}": advice_red,
+        # Keep this for backward compatibility if the old template is used
+        "{Discharge_Advice}": advice_block
     }
 
     safe_hn = re.sub(r'[^a-zA-Z0-9]', '_', hn) or "Guest"
     filename = f"Advice_{safe_hn}.docx"
     output_path = os.path.join(output_dir, filename)
 
-    fill_paragraph_template(template_path, replacements, output_path)
+    fill_advice_template(template_path, replacements, output_path)
     return output_path
 
 def generate_informed_consent(raw_text: str, output_dir: str) -> str:
