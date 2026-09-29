@@ -16,6 +16,7 @@ import re
 import sys
 import zipfile
 import xml.etree.ElementTree as ET
+
 import tkinter as tk
 def get_unique_filename(output_dir: str, base_filename: str) -> str:
     name, ext = os.path.splitext(base_filename)
@@ -27,7 +28,7 @@ def get_unique_filename(output_dir: str, base_filename: str) -> str:
     return filename
 
 
-APP_VERSION = 'v1.3.2'
+APP_VERSION = 'v1.3.3'
 
 from tkinter import ttk, messagebox, filedialog
 
@@ -190,7 +191,7 @@ def fill_textbox_template(template_path: str, replacements: dict, output_path: s
                             
                             if parent_r is not None:
                                 for line in lines[1:]:
-                                    import xml.etree.ElementTree as ET
+                                    
                                     ET.SubElement(parent_r, f'{{{ns["w"]}}}br')
                                     new_t = ET.SubElement(parent_r, f'{{{ns["w"]}}}t')
                                     new_t.text = line
@@ -325,7 +326,7 @@ def generate_doctor_order(raw_text: str, output_dir: str) -> str:
     filename = get_unique_filename(output_dir, f"Doctor_Order_{safe_hn}.docx")
     output_path = os.path.join(output_dir, filename)
 
-    fill_advice_template(template_path, replacements, output_path)
+    fill_paragraph_template(template_path, replacements, output_path)
     return output_path
 
 
